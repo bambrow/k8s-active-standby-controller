@@ -1,0 +1,54 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: active-standby-controller
+  namespace: 
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: active-standby-controller
+  namespace:
+rules:
+  - apiGroups: [""]
+    resources: ["services", "pods", "pods/exec"]
+    verbs: ["get", "list", "post", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: active-standby-controller
+subjects:
+  - kind: ServiceAccount
+    name: active-standby-controller
+    namespace:
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: active-standby-controller
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: active-standby-controller
+  namespace:
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: active-standby-controller
+  template:
+    metadata:
+      labels:
+        app: active-standby-controller
+    spec:
+      serviceAccountName: active-standby-controller
+      containers:
+        - name: active-standby-controller
+          image:
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace

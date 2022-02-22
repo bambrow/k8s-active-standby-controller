@@ -1,0 +1,11 @@
+server:
+  port: 9962
+
+k8s:
+  services:
+    - serviceName: "yarn-rm-ui"
+      autoElect: false
+      activeScript: ["bash", "-c", "yarn rmadmin -getAllServiceState | grep $HOSTNAME | tr -s ' ' | cut -d ' ' -f2"]
+      activeOutput: "active"
+
+
