@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: bambrow/active-standby
+  repository: bambrow/k8s-active-standby-controller
   pullPolicy: IfNotPresent
   tag: "0.1.0"
 

@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.bambrow</groupId>
     <artifactId>k8s-active-standby-controller</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0</version>
     <name>k8s-active-standby-controller</name>
     <description>k8s-active-standby-controller</description>
     <properties>
