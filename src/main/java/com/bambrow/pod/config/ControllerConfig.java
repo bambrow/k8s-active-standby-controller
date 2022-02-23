@@ -1,5 +1,6 @@
 package com.bambrow.pod.config;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -65,6 +66,10 @@ public class ControllerConfig {
                     ", activeScript='" + Arrays.toString(activeScript) + '\'' +
                     ", activeOutput='" + activeOutput + '\'' +
                     '}';
+        }
+
+        public boolean isValid() {
+            return StringUtils.isNotEmpty(serviceName);
         }
     }
 }

@@ -58,12 +58,14 @@ public class ControllerService {
         List<ControllerConfig.ServiceElection> serviceElections = config.getServices();
         for (ControllerConfig.ServiceElection serviceElection : serviceElections) {
             log.info("Get service election: {}", serviceElection.toString());
-            String serviceName = serviceElection.getServiceName();
-            V1Service service = getServiceWithName(serviceName);
-            if (service != null) {
-                List<V1Pod> podList = getPodsByService(service);
-                if (!podList.isEmpty()) {
-                    electActivePod(service, podList, serviceElection);
+            if (serviceElection.isValid()) {
+                String serviceName = serviceElection.getServiceName();
+                V1Service service = getServiceWithName(serviceName);
+                if (service != null) {
+                    List<V1Pod> podList = getPodsByService(service);
+                    if (!podList.isEmpty()) {
+                        electActivePod(service, podList, serviceElection);
+                    }
                 }
             }
         }
@@ -117,11 +119,7 @@ public class ControllerService {
                             return;
                         } else {
                             log.info("The running pod is not truly active, delabel it: {}", pod.getMetadata().getName());
-                            if (delabelActivePod(pod.getMetadata().getName())) {
-                                log.info("Delabel complete, pod name: {}", pod.getMetadata().getName());
-                            } else {
-                                log.error("Delabel failed, pod name: {}", pod.getMetadata().getName());
-                            }
+                            delabelActivePod(pod.getMetadata().getName());
                         }
                     } else {
                         addSelectorToService(service);
@@ -129,11 +127,7 @@ public class ControllerService {
                     }
                 } else {
                     log.info("Find a pod with active label but not running, delabel it: {}" + pod.getMetadata().getName());
-                    if (delabelActivePod(pod.getMetadata().getName())) {
-                        log.info("Delabel complete, pod name: {}", pod.getMetadata().getName());
-                    } else {
-                        log.error("Delabel failed, pod name: {}", pod.getMetadata().getName());
-                    }
+                    delabelActivePod(pod.getMetadata().getName());
                 }
             }
         }
@@ -145,10 +139,7 @@ public class ControllerService {
             V1Pod activePod = eligiblePodList.get(0);
             log.info("Auto elect the first pod: {}", activePod.getMetadata().getName());
             if (labelActivePod(activePod.getMetadata().getName())) {
-                log.info("Auto elect complete, pod name: {}", activePod.getMetadata().getName());
                 elected = true;
-            } else {
-                log.error("Auto elect failed, pod name: {}", activePod.getMetadata().getName());
             }
         } else {
             String[] activeScript = serviceElection.getActiveScript();
@@ -157,22 +148,15 @@ public class ControllerService {
                 if (executeCmd(eligiblePod.getMetadata().getName(), activeScript, activeOutput)) {
                     log.info("Active script passed in pod: {}", eligiblePod.getMetadata().getName());
                     if (labelActivePod(eligiblePod.getMetadata().getName())) {
-                        log.info("Elect complete, pod name: {}", eligiblePod.getMetadata().getName());
                         elected = true;
                         break;
-                    } else {
-                        log.error("Elect failed, pod name: {}", eligiblePod.getMetadata().getName());
                     }
                 }
             }
         }
         // finally, add selector to service if necessary
         if (elected) {
-            if (addSelectorToService(service)) {
-                log.info("Added selector to service: {}", service.getMetadata().getName());
-            } else {
-                log.error("Add selector to service failed: {}", service.getMetadata().getName());
-            }
+            addSelectorToService(service);
         }
     }
 
@@ -182,6 +166,7 @@ public class ControllerService {
             V1Patch patch = new V1Patch(String.format("{\"spec\":{\"selector\":{\"%s\":\"%s\"}}}", POD_LABEL_KEY, POD_LABEL_ACTIVE));
             try {
                 Kubectl.patch(V1Service.class).namespace(namespace).name(service.getMetadata().getName()).patchType(V1Patch.PATCH_FORMAT_STRATEGIC_MERGE_PATCH).patchContent(patch).execute();
+                log.info("Patching service: {} with patch: {}", service.getMetadata().getName(), patch.getValue());
                 return true;
             } catch (KubectlException e) {
                 log.error("Error patching service: {} with patch: {}", service.getMetadata().getName(), patch.getValue());
@@ -213,7 +198,7 @@ public class ControllerService {
             String output = os.toString();
             log.info("Executing command output: {}", output);
             boolean equal = StringUtils.equals(output == null ? null : output.trim(), activeOutput);
-            log.info("Comparing {} with {}: {}", output, activeOutput, equal);
+            log.info("Comparing {} with {}: {}", output == null ? null : output.trim(), activeOutput, equal);
             return equal;
         } catch (ApiException | IOException | InterruptedException e) {
             log.error("Executing command failed: {} in pod {}", Arrays.toString(command), podName);
@@ -229,6 +214,7 @@ public class ControllerService {
     private boolean labelActivePod(String podName) {
         try {
             Kubectl.label(V1Pod.class).namespace(namespace).name(podName).addLabel(POD_LABEL_KEY, POD_LABEL_ACTIVE).execute();
+            log.info("Labelling pod: {} with label: {}={}", podName, POD_LABEL_KEY, POD_LABEL_ACTIVE);
             return true;
         } catch (KubectlException e) {
             log.error("Error labelling pod: {} with label: {}={}", podName, POD_LABEL_KEY, POD_LABEL_ACTIVE);
@@ -239,10 +225,11 @@ public class ControllerService {
 
     private boolean delabelActivePod(String podName) {
         try {
-            Kubectl.label(V1Pod.class).namespace(namespace).name(podName).addLabel(POD_LABEL_KEY, "None").execute();
+            Kubectl.label(V1Pod.class).namespace(namespace).name(podName).addLabel(POD_LABEL_KEY, "none").execute();
+            log.info("Delabelling pod: {} with label: {}={}", podName, POD_LABEL_KEY, "none");
             return true;
         } catch (KubectlException e) {
-            log.error("Error delabelling pod: {} with label: {}={}", podName, POD_LABEL_KEY, "None");
+            log.error("Error delabelling pod: {} with label: {}={}", podName, POD_LABEL_KEY, "none");
             e.printStackTrace();
             return false;
         }

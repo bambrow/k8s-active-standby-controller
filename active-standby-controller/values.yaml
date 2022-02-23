@@ -1,0 +1,30 @@
+# Default values for active-standby-controller.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: bambrow/active-standby
+  pullPolicy: IfNotPresent
+  tag: "0.1.0"
+
+nameOverride: ""
+fullnameOverride: ""
+
+server:
+  port: 9962
+
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "200m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+podAnnotations: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

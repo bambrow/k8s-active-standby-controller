@@ -3,9 +3,9 @@ server:
 
 k8s:
   services:
-    - serviceName: "yarn-rm-ui"
+    - serviceName: "example-svc"
       autoElect: false
-      activeScript: ["bash", "-c", "yarn rmadmin -getAllServiceState | grep $HOSTNAME | tr -s ' ' | cut -d ' ' -f2"]
-      activeOutput: "active"
+      activeScript: ""
+      activeOutput: ""
 
 

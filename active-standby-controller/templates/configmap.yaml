@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "controller.name" . }}
+  labels:
+      {{- include "controller.labels" . | nindent 4 }}
+data:
+  application.yml: |-
+    server:
+      port: {{ .Values.server.port }}
+    k8s:
+      services:
+        - serviceName: "example-svc"
+          autoElect: false
+          activeScript: ["bash", "-c", "test-script"]
+          activeOutput: "active"
+        - serviceName: "example-auto-elect-svc"
+          autoElect: true
+          activeScript: ""
+          activeOutput: ""
