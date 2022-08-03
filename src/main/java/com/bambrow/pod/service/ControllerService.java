@@ -73,7 +73,7 @@ public class ControllerService {
 
     private V1Service getServiceWithName(String serviceName) {
         try {
-            V1Service service = Kubectl.get(V1Service.class).namespace(namespace).name(serviceName).execute();
+            V1Service service = Kubectl.get(V1Service.class).skipDiscovery().namespace(namespace).name(serviceName).execute();
             log.info("Find service: {}", serviceName);
             return service;
         } catch (KubectlException e) {
@@ -94,7 +94,7 @@ public class ControllerService {
         options.setLabelSelector(labelSelector);
         // find pods with service selectors
         try {
-            List<V1Pod> podList = Kubectl.get(V1Pod.class).namespace(namespace).options(options).execute();
+            List<V1Pod> podList = Kubectl.get(V1Pod.class).skipDiscovery().namespace(namespace).options(options).execute();
             log.info("Find pods: {}", podList.stream().map(x -> x.getMetadata().getName()).collect(Collectors.joining(",")));
             return podList;
         } catch (KubectlException e) {
@@ -165,7 +165,7 @@ public class ControllerService {
         if (!selectors.containsKey(POD_LABEL_KEY)) {
             V1Patch patch = new V1Patch(String.format("{\"spec\":{\"selector\":{\"%s\":\"%s\"}}}", POD_LABEL_KEY, POD_LABEL_ACTIVE));
             try {
-                Kubectl.patch(V1Service.class).namespace(namespace).name(service.getMetadata().getName()).patchType(V1Patch.PATCH_FORMAT_STRATEGIC_MERGE_PATCH).patchContent(patch).execute();
+                Kubectl.patch(V1Service.class).skipDiscovery().namespace(namespace).name(service.getMetadata().getName()).patchType(V1Patch.PATCH_FORMAT_STRATEGIC_MERGE_PATCH).patchContent(patch).execute();
                 log.info("Patching service: {} with patch: {}", service.getMetadata().getName(), patch.getValue());
                 return true;
             } catch (KubectlException e) {
@@ -213,7 +213,7 @@ public class ControllerService {
 
     private boolean labelActivePod(String podName) {
         try {
-            Kubectl.label(V1Pod.class).namespace(namespace).name(podName).addLabel(POD_LABEL_KEY, POD_LABEL_ACTIVE).execute();
+            Kubectl.label(V1Pod.class).skipDiscovery().namespace(namespace).name(podName).addLabel(POD_LABEL_KEY, POD_LABEL_ACTIVE).execute();
             log.info("Labelling pod: {} with label: {}={}", podName, POD_LABEL_KEY, POD_LABEL_ACTIVE);
             return true;
         } catch (KubectlException e) {
@@ -225,7 +225,7 @@ public class ControllerService {
 
     private boolean delabelActivePod(String podName) {
         try {
-            Kubectl.label(V1Pod.class).namespace(namespace).name(podName).addLabel(POD_LABEL_KEY, "none").execute();
+            Kubectl.label(V1Pod.class).skipDiscovery().namespace(namespace).name(podName).addLabel(POD_LABEL_KEY, "none").execute();
             log.info("Delabelling pod: {} with label: {}={}", podName, POD_LABEL_KEY, "none");
             return true;
         } catch (KubectlException e) {
